@@ -1,0 +1,113 @@
+{
+  "curb_nodes": [
+    {
+      "jid": "curb1@localhost",
+      "password": "pwd",
+      "x": 10.0,
+      "y": 20.0,
+      "capacity": 2,
+      "has_ev_spots": true
+    },
+    {
+      "jid": "curb2@localhost",
+      "password": "pwd",
+      "x": 50.0,
+      "y": 50.0,
+      "capacity": 1,
+      "has_ev_spots": false
+    },
+    {
+      "jid": "curb3@localhost",
+      "password": "pwd",
+      "x": 30.0,
+      "y": 10.0,
+      "capacity": 1,
+      "has_ev_spots": false
+    },
+    {
+      "jid": "curb4@localhost",
+      "password": "pwd",
+      "x": 70.0,
+      "y": 25.0,
+      "capacity": 2,
+      "has_ev_spots": true
+    },
+    {
+      "jid": "curb5@localhost",
+      "password": "pwd",
+      "x": 20.0,
+      "y": 60.0,
+      "capacity": 1,
+      "has_ev_spots": false
+    }
+  ],
+  "vehicles": [
+    {
+      "jid": "ambulance1@localhost",
+      "password": "pwd",
+      "x": 12.0,
+      "y": 22.0,
+      "category": "emergency",
+      "size": "large",
+      "is_ev": false
+    },
+    {
+      "jid": "delivery1@localhost",
+      "password": "pwd",
+      "x": 45.0,
+      "y": 48.0,
+      "category": "shipping",
+      "size": "medium",
+      "is_ev": true
+    },
+    {
+      "jid": "civic1@localhost",
+      "password": "pwd",
+      "x": 5.0,
+      "y": 5.0,
+      "category": "rest",
+      "size": "small",
+      "is_ev": false
+    },
+    {
+      "jid": "family1@localhost",
+      "password": "pwd",
+      "x": 28.0,
+      "y": 8.0,
+      "category": "big_family",
+      "size": "medium",
+      "is_ev": false
+    },
+    {
+      "jid": "disabled1@localhost",
+      "password": "pwd",
+      "x": 68.0,
+      "y": 28.0,
+      "category": "disabled",
+      "size": "small",
+      "is_ev": false
+    },
+    {
+      "jid": "delivery2@localhost",
+      "password": "pwd",
+      "x": 18.0,
+      "y": 55.0,
+      "category": "shipping",
+      "size": "medium",
+      "is_ev": true
+    },
+    {
+      "jid": "civic2@localhost",
+      "password": "pwd",
+      "x": 55.0,
+      "y": 15.0,
+      "category": "rest",
+      "size": "small",
+      "is_ev": false
+    }
+  ],
+  "enforcer": {
+    "jid": "enforcer1@localhost",
+    "password": "pwd"
+  }
+}
