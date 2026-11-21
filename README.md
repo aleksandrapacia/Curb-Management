@@ -75,30 +75,29 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### xRun
+### Run
 
 ```bash
-# If a previous run left XMPP up (macOS / Linux):
-lsof -ti :5222 | xargs kill
-
 python main.py
 ```
 
 What starts:
 
-1. External XMPP server (`spade run` on **5222**) if needed
-2. SPADE agents in a background thread
-3. Pygame window on the **main thread** (required on macOS)
+1. A local XMPP server (`localhost`, ports **5222** and **9090**)
+2. SPADE agents on the main thread on Windows
+3. Pygame window on the main thread on macOS (required by the platform)
 
+Do not run `spade run` separately. The app starts its own server and requires
+ports 5222 and 9090 to be free; stop a previous simulation/server before rerunning.
 Close the Pygame window to stop the visualisation; the simulation then shuts down.
 
 ### Troubleshooting
 
 | Problem | What to try |
 |---------|-------------|
-| Cars stuck on “waiting for SPADE…” | Free port 5222, reinstall deps, check the terminal for agent startup lines |
-| Port 5222 busy | `lsof -ti :5222 \| xargs kill` (Windows: end the process listening on 5222) |
-| Need a clean re-run | Kill 5222, then `python main.py` again |
+| Port 5222 or 9090 busy | Stop the previous SPADE server, then run `python main.py` again |
+| Agent does not connect | Check the terminal for the agent name and XMPP connection error |
+| Need a clean re-run | Close the Pygame window and stop any remaining SPADE process first |
 
 ---
 
