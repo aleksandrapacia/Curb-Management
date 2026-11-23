@@ -102,5 +102,5 @@ Close the Pygame window to stop the visualisation; the simulation then shuts dow
 ---
 
 ## Co-authors
-- [@miki-17]((https://github.com/miki-17)
+- [@miki-17](https://github.com/miki-17)
 - [@kasiakkk170](https://github.com/kasiakkk170)
