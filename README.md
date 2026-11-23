@@ -4,7 +4,6 @@ Multi-agent system built in spade that simulates cars negotiating parking at str
 
 Course project for **Introduction to Intelligent Autonomous Systems (ISIA)** — FCUP
 
----
 
 ## Description
 
