@@ -1,5 +1,7 @@
 import asyncio
 import json
+import logging
+import os
 import socket
 import subprocess
 import sys
@@ -55,26 +57,28 @@ def start_xmpp_server() -> subprocess.Popen | None:
     Run SPADE's XMPP server in a separate process.
     Embedded server inside a background thread fails silently on macOS.
     """
-    if _port_open("localhost", 5222):
-        world.log("XMPP already running on :5222", "info")
-        print("XMPP already running on :5222", flush=True)
-        return None
+    busy_ports = [port for port in (5222, 9090) if _port_open("localhost", port)]
+    if busy_ports:
+        raise RuntimeError(
+            f"SPADE ports already in use: {', '.join(map(str, busy_ports))}. "
+            "Stop the old SPADE server, then run main.py again."
+        )
 
     cmd = [sys.executable, "-m", "spade", "run"]
     # Prefer the venv `spade` console script when available.
-    spade_bin = Path(sys.executable).with_name("spade")
+    spade_name = "spade.exe" if sys.platform == "win32" else "spade"
+    spade_bin = Path(sys.executable).with_name(spade_name)
     if spade_bin.exists():
         cmd = [str(spade_bin), "run"]
+    cmd.extend(["--host", "localhost", "--memory"])
+    if os.environ.get("SPADE_DEBUG") == "1":
+        cmd.append("--debug")
 
     print(f"Starting XMPP server: {' '.join(cmd)}", flush=True)
     world.log("starting XMPP server…", "info")
-    proc = subprocess.Popen(
-        cmd,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    )
-    for _ in range(50):
-        if _port_open("localhost", 5222):
+    proc = subprocess.Popen(cmd)
+    for _ in range(150):
+        if _port_open("localhost", 5222) and _port_open("localhost", 9090):
             world.log("XMPP server ready on :5222", "info")
             print("XMPP server ready on :5222", flush=True)
             return proc
@@ -82,9 +86,19 @@ def start_xmpp_server() -> subprocess.Popen | None:
             break
         time.sleep(0.1)
 
-    world.log("XMPP server failed to start — check port 5222", "fine")
-    print("ERROR: XMPP server did not open port 5222", flush=True)
-    return proc
+    if proc.poll() is None:
+        proc.terminate()
+        proc.wait(timeout=5)
+    raise RuntimeError("SPADE did not open ports 5222 and 9090; see server output above.")
+
+
+async def _start_agent(agent, name: str):
+    print(f"Starting {name}...", flush=True)
+    try:
+        await asyncio.wait_for(agent.start(auto_register=True), timeout=20)
+    except asyncio.TimeoutError as exc:
+        raise TimeoutError(f"{name} did not connect to XMPP within 20 seconds.") from exc
+    print(f"{name} online", flush=True)
 
 
 async def simulation(config):
@@ -92,7 +106,7 @@ async def simulation(config):
     print("SPADE agents starting…", flush=True)
 
     enforcement = EnforcementAgent(config["enforcer"]["jid"], config["enforcer"]["password"])
-    await enforcement.start(auto_register=True)
+    await _start_agent(enforcement, "enforcer")
     world.log("enforcer online", "info")
 
     curbs = []
@@ -103,7 +117,7 @@ async def simulation(config):
         curb.set("capacity", curb_conf["capacity"])
         curb.set("has_ev_spots", curb_conf.get("has_ev_spots", False))
         curb.set("enforcer", config["enforcer"]["jid"])
-        await curb.start(auto_register=True)
+        await _start_agent(curb, curb_conf["jid"])
         curbs.append(curb)
     world.log(f"{len(curbs)} curbs online", "info")
     await asyncio.sleep(2)
@@ -120,7 +134,7 @@ async def simulation(config):
         car.set("is_ev", vehicle["is_ev"])
         car.set("curbs", config["curb_nodes"])
         car.set("peers", [o["jid"] for o in config["vehicles"] if o["jid"] != vehicle["jid"]])
-        await car.start(auto_register=True)
+        await _start_agent(car, vehicle["jid"])
         cars.append(car)
         await asyncio.sleep(4)
 
@@ -141,7 +155,10 @@ async def simulation(config):
 
 def _run_simulation(config):
     try:
-        # IMPORTANT: no embedded server in a thread — use external `spade run`.
+        if os.environ.get("SPADE_DEBUG") == "1":
+            logging.basicConfig(level=logging.DEBUG)
+            logging.getLogger("slixmpp").setLevel(logging.DEBUG)
+        # Keep SPADE on the main thread on Windows for its event-loop backend.
         spade.run(simulation(config), embedded_xmpp_server=False)
     except Exception as exc:
         traceback.print_exc()
@@ -149,23 +166,40 @@ def _run_simulation(config):
         world.stop()
 
 
+def _run_viz():
+    try:
+        run_viz()
+    finally:
+        world.stop()
+
+
 if __name__ == "__main__":
     config = load_config()
     seed_world(config)
 
-    xmpp_proc = start_xmpp_server()
-    if not _port_open("localhost", 5222):
-        print("Cannot start without XMPP. Try: lsof -ti :5222 | xargs kill", flush=True)
-        world.log("no XMPP — agents cannot start", "fine")
+    try:
+        xmpp_proc = start_xmpp_server()
+    except (OSError, RuntimeError) as exc:
+        print(f"Cannot start simulation: {exc}", flush=True)
+        world.log(f"cannot start simulation: {exc}", "fine")
+        raise SystemExit(1)
 
-    sim_thread = threading.Thread(
-        target=_run_simulation, args=(config,), name="spade-sim", daemon=True
-    )
-    sim_thread.start()
-
-    # Pygame must own the macOS main thread.
-    run_viz()
-    world.stop()
-    sim_thread.join(timeout=5)
-    if xmpp_proc is not None and xmpp_proc.poll() is None:
-        xmpp_proc.terminate()
+    try:
+        if sys.platform == "win32":
+            viz_thread = threading.Thread(target=_run_viz, name="pygame-viz", daemon=True)
+            viz_thread.start()
+            _run_simulation(config)
+            viz_thread.join(timeout=5)
+        else:
+            sim_thread = threading.Thread(
+                target=_run_simulation, args=(config,), name="spade-sim", daemon=True
+            )
+            sim_thread.start()
+            # Pygame must own the macOS main thread.
+            _run_viz()
+            sim_thread.join(timeout=5)
+    finally:
+        world.stop()
+        if xmpp_proc.poll() is None:
+            xmpp_proc.terminate()
+            xmpp_proc.wait(timeout=5)
