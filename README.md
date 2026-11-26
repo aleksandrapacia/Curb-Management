@@ -97,6 +97,8 @@ Close the Pygame window to stop the visualisation; the simulation then shuts dow
 | Port 5222 or 9090 busy | Stop the previous SPADE server, then run `python main.py` again |
 | Agent does not connect | Check the terminal for the agent name and XMPP connection error |
 | Need a clean re-run | Close the Pygame window and stop any remaining SPADE process first |
+| SQLAlchemy ImportError| Type into your terminal -> ```python -m pip install "sqlalchemy[asyncio]"```|
+| Pygame might not install even if you imported the requirements | ```pip install pygame``` |
 
 ---
 
