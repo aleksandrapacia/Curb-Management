@@ -77,6 +77,7 @@ pip install -r requirements.txt
 ### Run
 
 ```bash
+$env:SPADE_DEBUG = "1"
 python main.py
 ```
 
