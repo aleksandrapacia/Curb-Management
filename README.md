@@ -60,7 +60,7 @@ Console wording maps to FIPA performatives, e.g. `Offer from curb…` = **propos
 ### Install
 
 ```bash
-git clone https://gitlab.up.pt/up202512397/autonomoussystems.git
+git clone https://github.com/aleksandrapacia/Curb-Management.git
 cd autonomoussystems
 
 python -m venv .venv
